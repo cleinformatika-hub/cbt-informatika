@@ -3,39 +3,83 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Informatika SMP - CBT Pro</title>
+<title>Informatika SMP - All-in-One</title>
 <style>
 body{font-family:'Segoe UI';margin:0;background:#eef2f7}
 header{background:linear-gradient(135deg,#1abc9c,#3498db);color:#fff;padding:20px;text-align:center}
-.container{max-width:900px;margin:auto;padding:15px}
-.card{background:#fff;border-radius:12px;padding:15px;margin-bottom:15px}
-input,select{width:100%;padding:10px;margin:5px 0}
+.container{max-width:1000px;margin:auto;padding:15px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:15px}
+.card{background:#fff;border-radius:12px;padding:15px}
+input,select,textarea{width:100%;padding:10px;margin:5px 0}
 button{padding:10px;border:none;border-radius:8px;background:#3498db;color:#fff}
 </style>
 </head>
 <body>
 
 <header>
-<h1>🔒 CBT Informatika SMP</h1>
-<p>Sistem Ujian Digital</p>
+<h1>📘 Informatika SMP</h1>
+<p>Belajar & Ujian Digital</p>
 </header>
 
 <div class="container">
+<div class="grid">
 
+<!-- LOGIN -->
 <div class="card">
 <h3>Login</h3>
 <input id="nama" placeholder="Nama">
 <input id="kelas" placeholder="Kelas">
-<input id="kode" placeholder="Kode Akses Hari Ini">
+<input id="kode" placeholder="Kode (untuk ujian)">
+<select id="mode">
+<option value="belajar">📚 Mode Belajar</option>
+<option value="ujian">🧠 Mode Ujian</option>
+</select>
 <select id="bab">
 <option value="dasar">Bab Dasar</option>
 <option value="internet">Bab Internet</option>
 </select>
-<button onclick="login()">Mulai Ujian</button>
+<button onclick="login()">Masuk</button>
 <p id="status"></p>
 </div>
 
-<div class="card">
+<!-- DASHBOARD GURU -->
+<div class="card" id="guruPanel" style="display:none">
+<h3>👨‍🏫 Dashboard Guru</h3>
+<input id="password" placeholder="Password Guru">
+<button onclick="loginGuru()">Login Guru</button>
+
+<div id="panel" style="display:none">
+<h4>Tambah Siswa</h4>
+<input id="sNama" placeholder="Nama">
+<input id="sKelas" placeholder="Kelas">
+<button onclick="addStudent()">Tambah</button>
+
+<h4>Materi</h4>
+<textarea id="materiInput"></textarea>
+<input id="videoInput" placeholder="Link YouTube">
+<input id="babMateri" placeholder="Bab (dasar/internet)">
+<button onclick="saveMateri()">Simpan</button>
+
+<h4>Tambah Soal</h4>
+<input id="q" placeholder="Pertanyaan">
+<input id="o1" placeholder="Opsi 1">
+<input id="o2" placeholder="Opsi 2">
+<input id="o3" placeholder="Opsi 3">
+<input id="ans" placeholder="Jawaban (0/1/2)">
+<input id="babSoal" placeholder="Bab">
+<button onclick="addQuestion()">Tambah</button>
+</div>
+</div>
+
+<!-- BELAJAR -->
+<div class="card" id="belajarPanel" style="display:none">
+<h3>📚 Materi</h3>
+<div id="materi"></div>
+<div id="video"></div>
+</div>
+
+<!-- UJIAN -->
+<div class="card" id="ujianPanel" style="display:none">
 <h3>⏱️ Waktu: <span id="timer">0</span></h3>
 <p id="question"></p>
 <div id="options"></div>
@@ -43,140 +87,96 @@ button{padding:10px;border:none;border-radius:8px;background:#3498db;color:#fff}
 </div>
 
 </div>
+</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-import { getFirestore, collection, getDocs, doc, setDoc } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, doc, setDoc } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyALiyuf_F6wXjt3zhqWWEcG_mlgZrqsFvE",
-  authDomain: "informatika-smp-67234.firebaseapp.com",
-  projectId: "informatika-smp-67234",
-  storageBucket: "informatika-smp-67234.firebasestorage.app",
-  messagingSenderId: "379885055714",
-  appId: "1:379885055714:web:58432e6752f6a3fddcf8bb"
-};
+apiKey:"AIzaSyALiyuf_F6wXjt3zhqWWEcG_mlgZrqsFvE",
+authDomain:"informatika-smp-67234.firebaseapp.com",
+projectId:"informatika-smp-67234",
+storageBucket:"informatika-smp-67234.firebasestorage.app",
+messagingSenderId:"379885055714",
+appId:"1:379885055714:web:58432e6752f6a3fddcf8bb"};
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const app=initializeApp(firebaseConfig);
+const db=getFirestore(app);
 
 let questions=[],current=0,score=0;
 let currentUser="",currentClass="";
-let time=120, interval;
+let time=120,interval;
 
-// 🔒 KODE HARIAN
-function getDailyCode(){
-  const d = new Date();
-  return "K" + d.getDate() + (d.getMonth()+1);
+function getDailyCode(){const d=new Date();return "K"+d.getDate()+(d.getMonth()+1)}
+
+// LOGIN SISWA
+window.login=async()=>{
+const snap=await getDocs(collection(db,"students"));
+let found=false;
+snap.forEach(doc=>{
+const s=doc.data();
+if(s.nama===nama.value && s.kelas===kelas.value) found=true;
+});
+
+if(!found){status.innerText="Tidak terdaftar";return}
+
+currentUser=nama.value;currentClass=kelas.value;
+
+if(mode.value==="ujian"){
+if(kode.value!==getDailyCode()){status.innerText="Kode salah";return}
+status.innerText="Mode Ujian";
+ujianPanel.style.display="block";
+belajarPanel.style.display="none";
+startQuiz();
+}else{
+status.innerText="Mode Belajar";
+belajarPanel.style.display="block";
+ujianPanel.style.display="none";
+loadMateri();
+}
 }
 
-// 🔐 LOGIN
-window.login = async ()=>{
-  const snap = await getDocs(collection(db,"students"));
-  let found=false;
-
-  snap.forEach(doc=>{
-    const s=doc.data();
-    if(s.nama===nama.value && s.kelas===kelas.value && kode.value===getDailyCode()){
-      found=true;
-    }
-  });
-
-  if(found){
-    currentUser=nama.value;
-    currentClass=kelas.value;
-    status.innerText="Login berhasil";
-    enterFullscreen();
-    startQuiz();
-  } else {
-    status.innerText="Akses ditolak (kode salah)";
-  }
+// GURU
+window.loginGuru=()=>{
+if(password.value==="guru"){panel.style.display="block"}
 }
 
-// 📱 FULLSCREEN
-function enterFullscreen(){
-  if(document.documentElement.requestFullscreen){
-    document.documentElement.requestFullscreen();
-  }
-}
+window.addStudent=async()=>{
+await addDoc(collection(db,"students"),{nama:sNama.value,kelas:sKelas.value});alert("Siswa ditambahkan")}
 
-// 🎲 LOAD + FILTER + RANDOM + LIMIT
+window.saveMateri=async()=>{
+await addDoc(collection(db,"materi"),{isi:materiInput.value,video:videoInput.value,bab:babMateri.value});alert("Materi disimpan")}
+
+window.addQuestion=async()=>{
+await addDoc(collection(db,"questions"),{q:q.value,options:[o1.value,o2.value,o3.value],answer:parseInt(ans.value),bab:babSoal.value});alert("Soal ditambahkan")}
+
+async function loadMateri(){
+const snap=await getDocs(collection(db,"materi"));
+snap.forEach(doc=>{
+const d=doc.data();
+if(d.bab===bab.value){materi.innerText=d.isi; if(d.video) video.innerHTML=`<iframe width='100%' height='200' src='${d.video}'></iframe>`}
+})}
+
 async function startQuiz(){
-  const snap = await getDocs(collection(db,"questions"));
-  questions=[];
+const snap=await getDocs(collection(db,"questions"));
+questions=[];
+snap.forEach(doc=>{const q=doc.data();if(q.bab===bab.value)questions.push(q)});
+questions.sort(()=>Math.random()-0.5);
+questions=questions.slice(0,5);
+current=0;score=0;startTimer();showQuestion()}
 
-  snap.forEach(doc=>{
-    const q=doc.data();
-    if(q.bab===bab.value) questions.push(q);
-  });
+function startTimer(){time=120;timer.innerText=time;interval=setInterval(()=>{time--;timer.innerText=time;if(time<=0){clearInterval(interval);finishQuiz()}},1000)}
 
-  // shuffle
-  questions.sort(()=>Math.random()-0.5);
+function showQuestion(){if(current>=questions.length){finishQuiz();return}
+const q=questions[current];question.innerText=q.q;options.innerHTML="";
+q.options.forEach((opt,i)=>{const btn=document.createElement("button");btn.innerText=opt;btn.onclick=()=>answer(i);options.appendChild(btn)})}
 
-  // limit 5 soal
-  questions = questions.slice(0,5);
+function answer(i){if(i===questions[current].answer)score++;current++;showQuestion()}
 
-  current=0; score=0;
-  startTimer();
-  showQuestion();
-}
+function finishQuiz(){clearInterval(interval);question.innerText="Selesai";options.innerHTML="";result.innerText="Nilai: "+score;saveScore()}
 
-// ⏱️ TIMER
-function startTimer(){
-  time=120;
-  timer.innerText=time;
-  interval=setInterval(()=>{
-    time--;
-    timer.innerText=time;
-    if(time<=0){
-      clearInterval(interval);
-      finishQuiz();
-    }
-  },1000);
-}
-
-function showQuestion(){
-  if(current>=questions.length){
-    finishQuiz();
-    return;
-  }
-
-  const q=questions[current];
-  question.innerText=q.q;
-  options.innerHTML="";
-
-  q.options.forEach((opt,i)=>{
-    const btn=document.createElement("button");
-    btn.innerText=opt;
-    btn.onclick=()=>answer(i);
-    options.appendChild(btn);
-  });
-}
-
-function answer(i){
-  if(i===questions[current].answer) score++;
-  current++;
-  showQuestion();
-}
-
-function finishQuiz(){
-  clearInterval(interval);
-  question.innerText="Selesai";
-  options.innerHTML="";
-  result.innerText="Nilai: "+score;
-  saveScore();
-}
-
-// 💾 SIMPAN NILAI
-async function saveScore(){
-  const id=currentUser+"_"+currentClass;
-  await setDoc(doc(db,"scores",id),{
-    nama:currentUser,
-    kelas:currentClass,
-    nilai:score,
-    bab: bab.value
-  });
-}
+async function saveScore(){const id=currentUser+"_"+currentClass;await setDoc(doc(db,"scores",id),{nama:currentUser,kelas:currentClass,nilai:score,bab:bab.value})}
 
 </script>
 
