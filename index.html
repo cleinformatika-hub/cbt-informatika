@@ -43,21 +43,28 @@ button{padding:10px;border:none;border-radius:8px;background:#3498db;color:#fff}
 </div>
 
 <!-- DASHBOARD GURU -->
-<div class="card" id="guruPanel" style="display:none">
-<h3>👨‍🏫 Dashboard Guru</h3>
+<div class="card">
+<h3>👨‍🏫 Login Guru</h3>
 <input id="password" placeholder="Password Guru">
-<button onclick="loginGuru()">Login Guru</button>
+<button onclick="loginGuru()">Masuk Guru</button>
+</div>
 
-<div id="panel" style="display:none">
+<div class="card" id="guruPanel" style="display:none">
+<h3>Dashboard Guru</h3>
+
 <h4>Tambah Siswa</h4>
 <input id="sNama" placeholder="Nama">
 <input id="sKelas" placeholder="Kelas">
 <button onclick="addStudent()">Tambah</button>
 
+<h4>Import Siswa</h4>
+<textarea id="importSiswa" placeholder="Budi,7A\nSiti,7A"></textarea>
+<button onclick="importStudents()">Import Siswa</button>
+
 <h4>Materi</h4>
 <textarea id="materiInput"></textarea>
 <input id="videoInput" placeholder="Link YouTube">
-<input id="babMateri" placeholder="Bab (dasar/internet)">
+<input id="babMateri" placeholder="Bab">
 <button onclick="saveMateri()">Simpan</button>
 
 <h4>Tambah Soal</h4>
@@ -68,7 +75,11 @@ button{padding:10px;border:none;border-radius:8px;background:#3498db;color:#fff}
 <input id="ans" placeholder="Jawaban (0/1/2)">
 <input id="babSoal" placeholder="Bab">
 <button onclick="addQuestion()">Tambah</button>
-</div>
+
+<h4>Import Soal</h4>
+<textarea id="importSoal" placeholder="Pertanyaan,Opsi1|Opsi2|Opsi3,0,dasar"></textarea>
+<button onclick="importQuestions()">Import Soal</button>
+
 </div>
 
 <!-- BELAJAR -->
@@ -110,7 +121,6 @@ let time=120,interval;
 
 function getDailyCode(){const d=new Date();return "K"+d.getDate()+(d.getMonth()+1)}
 
-// LOGIN SISWA
 window.login=async()=>{
 const snap=await getDocs(collection(db,"students"));
 let found=false;
@@ -137,9 +147,10 @@ loadMateri();
 }
 }
 
-// GURU
 window.loginGuru=()=>{
-if(password.value==="guru"){panel.style.display="block"}
+if(password.value==="guru"){
+  guruPanel.style.display="block";
+}
 }
 
 window.addStudent=async()=>{
@@ -150,6 +161,16 @@ await addDoc(collection(db,"materi"),{isi:materiInput.value,video:videoInput.val
 
 window.addQuestion=async()=>{
 await addDoc(collection(db,"questions"),{q:q.value,options:[o1.value,o2.value,o3.value],answer:parseInt(ans.value),bab:babSoal.value});alert("Soal ditambahkan")}
+
+window.importStudents=async()=>{
+const lines=importSiswa.value.split("\n");
+for(let l of lines){const [n,k]=l.split(",");if(n&&k){await addDoc(collection(db,"students"),{nama:n.trim(),kelas:k.trim()})}}
+alert("Import siswa berhasil")}
+
+window.importQuestions=async()=>{
+const lines=importSoal.value.split("\n");
+for(let l of lines){const [q1,o,a,b]=l.split(",");if(q1&&o){await addDoc(collection(db,"questions"),{q:q1.trim(),options:o.split("|"),answer:parseInt(a),bab:b.trim()})}}
+alert("Import soal berhasil")}
 
 async function loadMateri(){
 const snap=await getDocs(collection(db,"materi"));
