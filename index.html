@@ -147,7 +147,7 @@ Siti,7A"></textarea>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+import { getFirestore, collection, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
 const firebaseConfig = {
 apiKey:"AIzaSyALiyuf_F6wXjt3zhqWWEcG_mlgZrqsFvE",
@@ -273,11 +273,21 @@ window.importStudents = async ()=>{
 }
 
 // LOGOUT GURU
-window.logoutGuru=()=>{
-  guruPage.classList.add("hidden");
-  guruLoginPage.classList.remove("hidden");
-  loginPage.classList.remove("hidden");
-}
+window.loginGuru = function () {
+  const pass = document.getElementById("password").value.trim();
+
+  console.log("Password input:", pass); // debug
+
+  if (pass === "guru123!") {
+    alert("Login berhasil"); // tanda berhasil
+
+    document.getElementById("guruLoginPage").classList.add("hidden");
+    document.getElementById("loginPage").classList.add("hidden");
+    document.getElementById("guruPage").classList.remove("hidden");
+  } else {
+    alert("Password salah");
+  }
+};
 
 window.backMenu=()=>{
 materiPage.classList.add("hidden");
