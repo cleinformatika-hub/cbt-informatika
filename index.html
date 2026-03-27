@@ -6,60 +6,13 @@
 <title>CBT Informatika SMP</title>
 
 <style>
-body{
-  font-family:'Segoe UI',sans-serif;
-  margin:0;
-  background:linear-gradient(135deg,#dfe9f3,#ffffff);
-}
-header{
-  background:linear-gradient(135deg,#1abc9c,#3498db);
-  color:#fff;
-  padding:25px;
-  text-align:center;
-}
-.container{
-  max-width:900px;
-  margin:auto;
-  padding:20px;
-}
-.card{
-  background:#fff;
-  border-radius:18px;
-  padding:20px;
-  box-shadow:0 10px 25px rgba(0,0,0,0.1);
-  animation:fadeIn 0.4s ease;
-}
-input,select{
-  width:100%;
-  padding:12px;
-  margin:8px 0;
-  border-radius:10px;
-  border:1px solid #ddd;
-}
-button{
-  width:100%;
-  padding:12px;
-  border:none;
-  border-radius:10px;
-  background:linear-gradient(135deg,#3498db,#2980b9);
-  color:white;
-  font-size:15px;
-  cursor:pointer;
-}
-button:hover{opacity:0.9}
-
+body{font-family:'Segoe UI',sans-serif;margin:0;background:linear-gradient(135deg,#dfe9f3,#ffffff)}
+header{background:linear-gradient(135deg,#1abc9c,#3498db);color:#fff;padding:25px;text-align:center}
+.container{max-width:900px;margin:auto;padding:20px}
+.card{background:#fff;border-radius:18px;padding:20px;margin-bottom:20px;box-shadow:0 10px 25px rgba(0,0,0,0.1)}
+input,select,textarea{width:100%;padding:12px;margin:8px 0;border-radius:10px;border:1px solid #ddd}
+button{width:100%;padding:12px;border:none;border-radius:10px;background:linear-gradient(135deg,#3498db,#2980b9);color:white;font-size:15px}
 .hidden{display:none}
-
-@keyframes fadeIn{
-  from{opacity:0;transform:translateY(10px)}
-  to{opacity:1;transform:translateY(0)}
-}
-
-.menu-btn{
-  margin:10px 0;
-  font-size:16px;
-}
-
 </style>
 </head>
 <body>
@@ -72,7 +25,7 @@ button:hover{opacity:0.9}
 
 <div class="container">
 
-<!-- HALAMAN LOGIN SISWA -->
+<!-- LOGIN SISWA -->
 <div class="card" id="loginPage">
 <h3>Login Siswa</h3>
 <input id="nama" placeholder="Nama">
@@ -86,12 +39,12 @@ button:hover{opacity:0.9}
 <option value="belajar">📚 Belajar</option>
 <option value="ujian">🧠 Ujian</option>
 </select>
-<button onclick="login()">Masuk</button>
+<button onclick="loginSiswa()">Masuk</button>
 <p id="status"></p>
 </div>
 
-<!-- HALAMAN LOGIN GURU (TERPISAH) -->
-<div class="card" id="guruLoginPage">
+<!-- LOGIN GURU -->
+<div class="card" id="guruLogin">
 <h3>👨‍🏫 Login Guru</h3>
 <input id="password" type="password" placeholder="Password Guru">
 <button onclick="loginGuru()">Masuk Guru</button>
@@ -100,16 +53,12 @@ button:hover{opacity:0.9}
 <!-- DASHBOARD GURU -->
 <div class="card hidden" id="guruPage">
 <h3>Dashboard Guru</h3>
-
-<h4>Import Siswa</h4>
-<textarea id="importSiswa" placeholder="Budi,7A
-Siti,7A"></textarea>
-<button onclick="importStudents()">Import Siswa</button>
-
+<textarea id="importSiswa" placeholder="Budi,7A\nSiti,7A"></textarea>
+<button onclick="importSiswaData()">Import Siswa</button>
 <button onclick="logoutGuru()">Logout</button>
 </div>
 
-<!-- HALAMAN PILIH BAB -->
+<!-- PILIH BAB -->
 <div class="card hidden" id="babPage">
 <h3>Pilih Bab</h3>
 <select id="bab">
@@ -120,27 +69,25 @@ Siti,7A"></textarea>
 <button onclick="lanjut()">Lanjut</button>
 </div>
 
-<!-- HALAMAN DASHBOARD -->
+<!-- DASHBOARD SISWA -->
 <div class="card hidden" id="menuPage">
 <h3>Dashboard</h3>
-<button class="menu-btn" onclick="openMateri()">📚 Buka Materi</button>
-<button class="menu-btn" onclick="openUjian()">🧠 Mulai Ujian</button>
+<button onclick="openMateri()">📚 Materi</button>
+<button onclick="openUjian()">🧠 Ujian</button>
 </div>
 
 <!-- MATERI -->
 <div class="card hidden" id="materiPage">
 <h3>Materi</h3>
 <div id="materi"></div>
-<div id="video"></div>
-<button onclick="backMenu()">⬅ Kembali</button>
+<button onclick="backMenu()">Kembali</button>
 </div>
 
 <!-- UJIAN -->
 <div class="card hidden" id="ujianPage">
-<h3>⏱️ <span id="timer">0</span></h3>
+<h3>Ujian</h3>
 <p id="question"></p>
 <div id="options"></div>
-<p id="result"></p>
 </div>
 
 </div>
@@ -149,43 +96,71 @@ Siti,7A"></textarea>
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
 import { getFirestore, collection, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
-const firebaseConfig = {
+const app = initializeApp({
 apiKey:"AIzaSyALiyuf_F6wXjt3zhqWWEcG_mlgZrqsFvE",
-authDomain:"informatika-smp-67234.firebaseapp.com",
-projectId:"informatika-smp-67234"};
+projectId:"informatika-smp-67234"
+});
 
-const app=initializeApp(firebaseConfig);
-const db=getFirestore(app);
+const db = getFirestore(app);
 
-let modeUser="", level="";
-
-function getDailyCode(){const d=new Date();return "K"+d.getDate()+(d.getMonth()+1)}
+let level="",modeUser="";
 
 // LOGIN SISWA
-window.login=async()=>{
-const snap=await getDocs(collection(db,"students"));
+window.loginSiswa = async ()=>{
+const snap = await getDocs(collection(db,"students"));
 let ok=false;
-snap.forEach(doc=>{
-const s=doc.data();
+snap.forEach(d=>{
+const s=d.data();
 if(s.nama===nama.value && s.kelas===kelas.value) ok=true;
 });
 
 if(!ok){status.innerText="Tidak terdaftar";return}
 
-modeUser=mode.value;
 level=tingkat.value;
+modeUser=mode.value;
 
 loginPage.classList.add("hidden");
 babPage.classList.remove("hidden");
 
-if(modeUser==="ujian"){
-kode.classList.remove("hidden");
+if(modeUser==="ujian") kode.classList.remove("hidden");
+}
+
+// LOGIN GURU (FIX)
+window.loginGuru = ()=>{
+const pass=document.getElementById("password").value.trim();
+
+if(pass==="guru123!"){
+alert("Login guru berhasil");
+loginPage.classList.add("hidden");
+guruLogin.classList.add("hidden");
+guruPage.classList.remove("hidden");
+}else{
+alert("Password salah");
 }
 }
 
-// LANJUT KE DASHBOARD
+// IMPORT SISWA
+window.importSiswaData = async ()=>{
+const lines=importSiswa.value.split("\n");
+for(let l of lines){
+const [n,k]=l.split(",");
+if(n&&k){
+await addDoc(collection(db,"students"),{nama:n.trim(),kelas:k.trim()});
+}
+}
+alert("Berhasil import");
+}
+
+// LOGOUT GURU
+window.logoutGuru=()=>{
+guruPage.classList.add("hidden");
+guruLogin.classList.remove("hidden");
+loginPage.classList.remove("hidden");
+}
+
+// LANJUT
 window.lanjut=()=>{
-if(modeUser==="ujian" && kode.value!==getDailyCode()){
+if(modeUser==="ujian" && kode.value!=="K263"){
 alert("Kode salah");return;
 }
 
@@ -199,12 +174,9 @@ menuPage.classList.add("hidden");
 materiPage.classList.remove("hidden");
 
 const snap=await getDocs(collection(db,"materi"));
-snap.forEach(doc=>{
-const d=doc.data();
-if(d.bab===bab.value && d.kelas.startsWith(level)){
-materi.innerText=d.isi;
-if(d.video) video.innerHTML=`<iframe width='100%' height='200' src='${d.video}'></iframe>`;
-}
+snap.forEach(d=>{
+const m=d.data();
+if(m.kelas.startsWith(level)) materi.innerText=m.isi;
 });
 }
 
@@ -214,80 +186,26 @@ menuPage.classList.add("hidden");
 ujianPage.classList.remove("hidden");
 
 const snap=await getDocs(collection(db,"questions"));
-let questions=[];
-
-snap.forEach(doc=>{
-const q=doc.data();
-if(q.bab===bab.value && q.kelas.startsWith(level)){
-questions.push(q);
-}
+let q=[];
+snap.forEach(d=>{
+const data=d.data();
+if(data.kelas.startsWith(level)) q.push(data);
 });
 
-questions.sort(()=>Math.random()-0.5);
-
-let current=0;
-
+let i=0;
 function show(){
-if(current>=questions.length){question.innerText="Selesai";return}
-const q=questions[current];
-question.innerText=q.q;
+if(i>=q.length){question.innerText="Selesai";return}
+question.innerText=q[i].q;
 options.innerHTML="";
-q.options.forEach((o,i)=>{
+q[i].options.forEach(o=>{
 const b=document.createElement("button");
 b.innerText=o;
-b.onclick=()=>{current++;show()};
+b.onclick=()=>{i++;show()};
 options.appendChild(b);
 });
 }
-
 show();
 }
-
-// LOGIN GURU
-window.loginGuru = () => {
-  const pass = document.getElementById("password").value.trim();
-
-  if(pass === "guru123!"){
-    document.getElementById("guruLoginPage").classList.add("hidden");
-    document.getElementById("loginPage").classList.add("hidden");
-    document.getElementById("guruPage").classList.remove("hidden");
-  } else {
-    alert("Password salah");
-  }
-}
-
-// IMPORT SISWA
-window.importStudents = async ()=>{
-  const lines = importSiswa.value.split("
-");
-  for(let l of lines){
-    const [n,k] = l.split(",");
-    if(n && k){
-      await addDoc(collection(db,"students"),{
-        nama:n.trim(),
-        kelas:k.trim()
-      });
-    }
-  }
-  alert("Import berhasil");
-}
-
-// LOGOUT GURU
-window.loginGuru = function () {
-  const pass = document.getElementById("password").value.trim();
-
-  console.log("Password input:", pass); // debug
-
-  if (pass === "guru123!") {
-    alert("Login berhasil"); // tanda berhasil
-
-    document.getElementById("guruLoginPage").classList.add("hidden");
-    document.getElementById("loginPage").classList.add("hidden");
-    document.getElementById("guruPage").classList.remove("hidden");
-  } else {
-    alert("Password salah");
-  }
-};
 
 window.backMenu=()=>{
 materiPage.classList.add("hidden");
