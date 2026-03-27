@@ -244,8 +244,10 @@ show();
 }
 
 // LOGIN GURU
-window.loginGuru=()=>{
-  if(password.value==="guru123!"){
+window.loginGuru = () => {
+  const pass = document.getElementById("password").value.trim();
+
+  if(pass === "guru123!"){
     document.getElementById("guruLoginPage").classList.add("hidden");
     document.getElementById("loginPage").classList.add("hidden");
     document.getElementById("guruPage").classList.remove("hidden");
