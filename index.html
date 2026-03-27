@@ -3,28 +3,76 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Informatika SMP</title>
+<title>CBT Informatika SMP</title>
 
 <style>
-body{font-family:'Segoe UI';margin:0;background:#eef2f7}
-header{background:linear-gradient(135deg,#1abc9c,#3498db);color:#fff;padding:20px;text-align:center}
-.container{max-width:900px;margin:auto;padding:15px}
-.card{background:#fff;border-radius:16px;padding:20px;margin-bottom:15px;box-shadow:0 6px 18px rgba(0,0,0,0.08)}
-input,select,textarea{width:100%;padding:12px;margin:6px 0;border-radius:10px;border:1px solid #ddd}
-button{width:100%;padding:12px;border:none;border-radius:10px;background:#3498db;color:#fff}
+body{
+  font-family:'Segoe UI',sans-serif;
+  margin:0;
+  background:linear-gradient(135deg,#dfe9f3,#ffffff);
+}
+header{
+  background:linear-gradient(135deg,#1abc9c,#3498db);
+  color:#fff;
+  padding:25px;
+  text-align:center;
+}
+.container{
+  max-width:900px;
+  margin:auto;
+  padding:20px;
+}
+.card{
+  background:#fff;
+  border-radius:18px;
+  padding:20px;
+  box-shadow:0 10px 25px rgba(0,0,0,0.1);
+  animation:fadeIn 0.4s ease;
+}
+input,select{
+  width:100%;
+  padding:12px;
+  margin:8px 0;
+  border-radius:10px;
+  border:1px solid #ddd;
+}
+button{
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:10px;
+  background:linear-gradient(135deg,#3498db,#2980b9);
+  color:white;
+  font-size:15px;
+  cursor:pointer;
+}
+button:hover{opacity:0.9}
+
+.hidden{display:none}
+
+@keyframes fadeIn{
+  from{opacity:0;transform:translateY(10px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+.menu-btn{
+  margin:10px 0;
+  font-size:16px;
+}
+
 </style>
 </head>
 <body>
 
 <header>
 <h1>📘 Informatika SMP</h1>
-<p>Belajar & Ujian Digital</p>
+<p>Platform Belajar & Ujian Digital</p>
 <p>👨‍🏫 Guru: <b>Pak Clement</b></p>
 </header>
 
 <div class="container">
 
-<!-- LOGIN SISWA -->
+<!-- HALAMAN LOGIN -->
 <div class="card" id="loginPage">
 <h3>Login Siswa</h3>
 <input id="nama" placeholder="Nama">
@@ -42,44 +90,34 @@ button{width:100%;padding:12px;border:none;border-radius:10px;background:#3498db
 <p id="status"></p>
 </div>
 
-<!-- LOGIN GURU -->
-<div class="card">
-<h3>👨‍🏫 Login Guru</h3>
-<input id="password" type="password" placeholder="Password Guru">
-<button onclick="loginGuru()">Masuk Guru</button>
-</div>
-
-<!-- DASHBOARD GURU -->
-<div class="card" id="guruPanel" style="display:none">
-<h3>Dashboard Guru</h3>
-
-<h4>Import Siswa</h4>
-<textarea id="importSiswa" placeholder="Budi,7A\nSiti,7A"></textarea>
-<button onclick="importStudents()">Import Siswa</button>
-
-</div>
-
-<!-- PILIH BAB -->
-<div class="card" id="babPage" style="display:none">
+<!-- HALAMAN PILIH BAB -->
+<div class="card hidden" id="babPage">
 <h3>Pilih Bab</h3>
 <select id="bab">
 <option value="dasar">Bab Dasar</option>
 <option value="internet">Bab Internet</option>
 </select>
-<input id="kode" placeholder="Kode (ujian)" style="display:none">
+<input id="kode" placeholder="Kode Ujian" class="hidden">
 <button onclick="lanjut()">Lanjut</button>
 </div>
 
+<!-- HALAMAN DASHBOARD -->
+<div class="card hidden" id="menuPage">
+<h3>Dashboard</h3>
+<button class="menu-btn" onclick="openMateri()">📚 Buka Materi</button>
+<button class="menu-btn" onclick="openUjian()">🧠 Mulai Ujian</button>
+</div>
+
 <!-- MATERI -->
-<div class="card" id="materiPage" style="display:none">
+<div class="card hidden" id="materiPage">
 <h3>Materi</h3>
 <div id="materi"></div>
 <div id="video"></div>
-<button onclick="back()">⬅ Kembali</button>
+<button onclick="backMenu()">⬅ Kembali</button>
 </div>
 
 <!-- UJIAN -->
-<div class="card" id="ujianPage" style="display:none">
+<div class="card hidden" id="ujianPage">
 <h3>⏱️ <span id="timer">0</span></h3>
 <p id="question"></p>
 <div id="options"></div>
@@ -90,7 +128,7 @@ button{width:100%;padding:12px;border:none;border-radius:10px;background:#3498db
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-import { getFirestore, collection, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
 const firebaseConfig = {
 apiKey:"AIzaSyALiyuf_F6wXjt3zhqWWEcG_mlgZrqsFvE",
@@ -104,7 +142,7 @@ let modeUser="", level="";
 
 function getDailyCode(){const d=new Date();return "K"+d.getDate()+(d.getMonth()+1)}
 
-// LOGIN SISWA
+// LOGIN
 window.login=async()=>{
 const snap=await getDocs(collection(db,"students"));
 let ok=false;
@@ -118,56 +156,29 @@ if(!ok){status.innerText="Tidak terdaftar";return}
 modeUser=mode.value;
 level=tingkat.value;
 
-loginPage.style.display="none";
-babPage.style.display="block";
+loginPage.classList.add("hidden");
+babPage.classList.remove("hidden");
 
 if(modeUser==="ujian"){
-kode.style.display="block";
+kode.classList.remove("hidden");
 }
 }
 
-// LOGIN GURU
-window.loginGuru=()=>{
-if(password.value==="guru123!"){
-guruPanel.style.display="block";
-}else{
-alert("Password salah");
-}
-}
-
-// IMPORT SISWA
-window.importStudents=async()=>{
-const lines=importSiswa.value.split("\n");
-for(let l of lines){
-const [n,k]=l.split(",");
-if(n && k){
-await addDoc(collection(db,"students"),{
-nama:n.trim(),kelas:k.trim()
-});
-}
-}
-alert("Siswa berhasil diimport");
-}
-
-// LANJUT
-window.lanjut=async()=>{
+// LANJUT KE DASHBOARD
+window.lanjut=()=>{
 if(modeUser==="ujian" && kode.value!==getDailyCode()){
 alert("Kode salah");return;
 }
 
-babPage.style.display="none";
-
-if(modeUser==="belajar"){
-materiPage.style.display="block";
-loadMateri();
-}else{
-ujianPage.style.display="block";
-startQuiz();
-}
+babPage.classList.add("hidden");
+menuPage.classList.remove("hidden");
 }
 
-// LOAD MATERI
-async function loadMateri(){
+// MATERI
+window.openMateri=async()=>{
+menuPage.classList.add("hidden");
+materiPage.classList.remove("hidden");
+
 const snap=await getDocs(collection(db,"materi"));
 snap.forEach(doc=>{
 const d=doc.data();
@@ -178,21 +189,26 @@ if(d.video) video.innerHTML=`<iframe width='100%' height='200' src='${d.video}'>
 });
 }
 
-// QUIZ
-let questions=[],current=0;
+// UJIAN
+window.openUjian=async()=>{
+menuPage.classList.add("hidden");
+ujianPage.classList.remove("hidden");
 
-async function startQuiz(){
 const snap=await getDocs(collection(db,"questions"));
-questions=[];
+let questions=[];
+
 snap.forEach(doc=>{
 const q=doc.data();
-if(q.bab===bab.value && q.kelas.startsWith(level)) questions.push(q);
-});
-questions.sort(()=>Math.random()-0.5);
-showQuestion();
+if(q.bab===bab.value && q.kelas.startsWith(level)){
+questions.push(q);
 }
+});
 
-function showQuestion(){
+questions.sort(()=>Math.random()-0.5);
+
+let current=0;
+
+function show(){
 if(current>=questions.length){question.innerText="Selesai";return}
 const q=questions[current];
 question.innerText=q.q;
@@ -200,14 +216,17 @@ options.innerHTML="";
 q.options.forEach((o,i)=>{
 const b=document.createElement("button");
 b.innerText=o;
-b.onclick=()=>{current++;showQuestion()};
+b.onclick=()=>{current++;show()};
 options.appendChild(b);
 });
 }
 
-window.back=()=>{
-materiPage.style.display="none";
-babPage.style.display="block";
+show();
+}
+
+window.backMenu=()=>{
+materiPage.classList.add("hidden");
+menuPage.classList.remove("hidden");
 }
 
 </script>
